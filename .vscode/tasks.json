@@ -6,7 +6,8 @@
         {
             "label": "Deploy Plugin",
             "type": "shell",
-            "command": "cp -av my-new-plugin /var/www/html/wp-content/plugins"
+            "command": "cp -av the-events-calendar-event-duplicator /var/www/html/wp-content/plugins",
+            "problemMatcher": []
         }
     ]
 }
