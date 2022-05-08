@@ -16,6 +16,11 @@ require_once 'duplicate_event.php';
 function teced_plugin_init() {
 	//ensure the events calendar is isnstalled
     //This can be done by checking the correct tables are in place I think
+
+    if ( current_user_can( 'edit_others_posts' ) ) {
+        add_filter( 'post_row_actions','teced_action_row', 10, 2 );
+        add_action( 'admin_action_teced_duplicate_event', 'teced_duplicate_event' );
+    }
 }
 
 /**
@@ -45,11 +50,9 @@ function teced_duplicate_event(): void {
         return;
     }
 
-    // check admin
+    $new_post_id = DuplicateEvent::duplicate($post_id);
 
-    $new_post_id = DuplicatePost::duplicate($post_id);
-
-    // Redirect to admin page.
+    // Redirect to new posts edit page.
     $redirect = admin_url( 'post.php?post=' . $new_post_id . '&action=edit' );
     wp_safe_redirect( $redirect );
 
@@ -57,6 +60,4 @@ function teced_duplicate_event(): void {
     die;
 }
 
-add_action( 'init', 'teced_plugin_init' );
-add_filter( 'post_row_actions','teced_action_row', 10, 2 );
-add_action( 'admin_action_teced_duplicate_event', 'teced_duplicate_event' );
+add_action( 'plugins_loaded', 'teced_plugin_init' );

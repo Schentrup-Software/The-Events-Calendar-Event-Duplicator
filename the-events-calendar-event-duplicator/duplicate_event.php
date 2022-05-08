@@ -1,11 +1,11 @@
 <?php
 
-class DuplicatePost
+class DuplicateEvent
 {
     public static function duplicate(int $post_id): int
     {
         global $wpdb;
-        /*
+
         $wpdb->query(
             $wpdb->prepare(
                 "INSERT INTO $wpdb->posts
@@ -81,98 +81,113 @@ class DuplicatePost
                 $post_id
             )
         );
-*/
-        $tribe_ticket_repository = new Tribe__Tickets__Ticket_Repository();
 
-        $ticket_post_ids = $tribe_ticket_repository->filter_by_event($post_id);
-
-        return 5;
-
-        /*foreach ( $ticket_post_ids as $id ) {
-            $wpdb->query(
-                $wpdb->prepare(
-                    "INSERT INTO $wpdb->posts
+        $ticket_post_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT post_id FROM wp_postmeta
+                WHERE
                     (
-                        post_author,
-                        post_date,
-                        post_date_gmt,
-                        post_content,
-                        post_title,
-                        post_excerpt,
-                        post_status,
-                        comment_status,
-                        ping_status,
-                        post_password,
-                        post_name,
-                        to_ping,
-                        pinged,
-                        post_modified,
-                        post_modified_gmt,
-                        post_content_filtered,
-                        post_parent,
-                        guid,
-                        menu_order,
-                        post_type,
-                        post_mime_type,
-                        comment_count
-                    )
-                    SELECT
-                        post_author,
-                        post_date,
-                        post_date_gmt,
-                        post_content,
-                        CONCAT(post_title, ' - Duplicate'),
-                        post_excerpt,
-                        post_status,
-                        comment_status,
-                        ping_status,
-                        post_password,
-                        post_name,
-                        to_ping,
-                        pinged,
-                        post_modified,
-                        post_modified_gmt,
-                        post_content_filtered,
-                        post_parent,
-                        guid,
-                        menu_order,
-                        post_type,
-                        post_mime_type,
-                        comment_count
-                    FROM $wpdb->posts
-                    WHERE ID = %s",
-                    $id
+                        meta_key = '_tec_tickets_commerce_event' OR
+                        meta_key = '_tribe_rsvp_for_event' OR
+                        meta_key = '_tribe_tpp_for_event'
+                    ) AND meta_value = %s;
+                ",
+                $post_id
+            )
+        );
+
+        $i = 1;
+        foreach ( $ticket_post_ids as $id ) {
+            $wpdb->query(
+                "INSERT INTO $wpdb->posts
+                (
+                    post_author,
+                    post_date,
+                    post_date_gmt,
+                    post_content,
+                    post_title,
+                    post_excerpt,
+                    post_status,
+                    comment_status,
+                    ping_status,
+                    post_password,
+                    post_name,
+                    to_ping,
+                    pinged,
+                    post_modified,
+                    post_modified_gmt,
+                    post_content_filtered,
+                    post_parent,
+                    guid,
+                    menu_order,
+                    post_type,
+                    post_mime_type,
+                    comment_count
                 )
+                SELECT
+                    post_author,
+                    post_date,
+                    post_date_gmt,
+                    post_content,
+                    post_title,
+                    post_excerpt,
+                    post_status,
+                    comment_status,
+                    ping_status,
+                    post_password,
+                    post_name,
+                    to_ping,
+                    pinged,
+                    post_modified,
+                    post_modified_gmt,
+                    post_content_filtered,
+                    post_parent,
+                    guid,
+                    menu_order,
+                    post_type,
+                    post_mime_type,
+                    comment_count
+                FROM $wpdb->posts
+                WHERE ID = $id"
             );
 
             $new_ticket_id = $wpdb->insert_id;
 
             $wpdb->query(
-                $wpdb->prepare(
-                    "INSERT INTO $wpdb->postmeta
-                    (
-                        post_id,
-                        meta_key,
-                        meta_value
-                    )
-                    SELECT
-                        $new_ticket_id AS post_id,
-                        meta_key,
-                        meta_value
-                    FROM $wpdb->postmeta
-                    WHERE post_id = %s;",
-                    $id
+                "INSERT INTO $wpdb->postmeta
+                (
+                    post_id,
+                    meta_key,
+                    meta_value
                 )
+                SELECT
+                    $new_ticket_id AS post_id,
+                    meta_key,
+                    meta_value
+                FROM $wpdb->postmeta
+                WHERE post_id = $id;"
             );
 
             $wpdb->query(
-                $wpdb->prepare(
-                    "UPDATE wp_postmeta
-                    SET meta_value = $newpost_id
-                    WHERE post_id = $new_ticket_id AND meta_key = '_tribe_tpp_for_event';",
-                    $id
-                )
+                "UPDATE $wpdb->postmeta
+                SET meta_value = $newpost_id
+                WHERE post_id = $new_ticket_id AND meta_key IN
+                (
+                    '_tec_tickets_commerce_event',
+                    '_tribe_rsvp_for_event',
+                    '_tribe_tpp_for_event'
+                );"
             );
-        }*/
+
+            $wpdb->query(
+                "UPDATE $wpdb->postmeta
+                SET meta_value = '$newpost_id-$i-EVENT-DUPLICATE'
+                WHERE post_id = $new_ticket_id AND meta_key = '_sku';"
+            );
+
+            $i++;
+        }
+
+        return $newpost_id;
     }
 }
